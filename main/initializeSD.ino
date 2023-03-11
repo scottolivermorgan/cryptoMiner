@@ -1,5 +1,4 @@
-// Quick hardware test for SPI card access.
-//
+// SD card via initialisation SPI card access.
 #include <SPI.h>
 #include "SdFat.h"
 #include "sdios.h"
@@ -30,13 +29,10 @@ File32 file;
 SdExFat sd;
 ExFile file;
 #elif SD_FAT_TYPE == 3
-//SdFs sd;
-//FsFile file;
 #else  // SD_FAT_TYPE
 #error Invalid SD_FAT_TYPE
 #endif  // SD_FAT_TYPE
-// Serial streams
-//ArduinoOutStream cout(Serial);
+
 char buffer [64]; // must be large enough for your whole string!
 
 // input buffer for line
@@ -93,10 +89,6 @@ void initSD() {
       Serial.print("Is chipSelect set to the correct value?\n");
       Serial.print("Does another SPI device need to be disabled?\n");
       Serial.print("Is there a wiring/soldering problem?\n");
-      //cout << F("\nerrorCode: ") << hex << showbase;
-      //cout << int(sd.card()->errorCode());
-      //cout << F(", errorData: ") << int(sd.card()->errorData());
-      //cout << dec << noshowbase << endl;
       return;
     }
     Serial.print("\nCard successfully initialized.\n");
@@ -109,7 +101,6 @@ void initSD() {
     return;
   }
   Serial.print("\nCard successfully initialized.\n");
-  //cout << endl;
 
   uint32_t size = sd.card()->sectorCount();
   if (size == 0) {
@@ -118,14 +109,6 @@ void initSD() {
     return;
   }
   uint32_t sizeMB = 0.000512 * size + 0.5;
-  /*cout << F("Card size: ") << sizeMB;
-  cout << F(" MB (MB = 1,000,000 bytes)\n");
-  cout << endl;
-  cout << F("Volume is FAT") << int(sd.vol()->fatType());
-  cout << F(", Cluster size (bytes): ") << sd.vol()->bytesPerCluster();
-  cout << endl << endl;
-
-  cout << F("Files found (date time size name):\n");*/
   sd.ls(LS_R | LS_DATE | LS_SIZE);
 
   if ((sizeMB > 1100 && sd.vol()->sectorsPerCluster() < 64)

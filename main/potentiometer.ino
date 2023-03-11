@@ -1,3 +1,5 @@
+// Measure voltage using voltage divider.
+
 float measureVoltage(){
   // number of analog samples to take per reading
   #define NUM_SAMPLES 10

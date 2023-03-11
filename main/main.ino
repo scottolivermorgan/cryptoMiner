@@ -1,5 +1,7 @@
-// Quick hardware test for SPI card access.
-//
+/* Program measures voltage of battery and switches relays 
+between mains and solar power, logging usage data to SD card. Has logical
+voltage buffer to stop ocillation around switching threashold*/
+
 #include <SPI.h>
 #include "SdFat.h"
 #include "sdios.h"
@@ -7,6 +9,7 @@
 #include <Wire.h>
 #include <DS3231.h>
 
+// Initialise params for various SD types.
 #if SD_FAT_TYPE == 0
 SdFat sd;
 File file;
@@ -23,17 +26,22 @@ FsFile file;
 #error Invalid SD_FAT_TYPE
 #endif  // SD_FAT_TYPE
 
-File myFile;
-DS3231 clock;
+
+File myFile;  //SD output file
+char buffer2[5];
+
+DS3231 clock; // timing module
 RTCDateTime dt;
+
 int sourceA = 6;    //Solar
 int sourceB = 5;     //Mains
-float voltage = 0.0;
-String Source = "mains"; 
-float lowerThreashold = 12.5 ;
-float upperThreashold = 13.5 ;
 
-char buffer2[5];
+float voltage = 0.0;  // Voltage measurement and switching params.
+String Source = "mains"; 
+
+float lowerThreashold = 12.5 ;  // below which switch system to mains power.
+float upperThreashold = 13.5 ;  // above which switch system to solar power.
+
 
 void setup() {
   Serial.begin(9600);
@@ -41,116 +49,47 @@ void setup() {
   while (!Serial) {
     yield();
   }
-  // Initialize DS3231
-  clock.begin();
-  // Send sketch compiling time to Arduino
-  clock.setDateTime(__DATE__, __TIME__);  
-  
-  pinMode(sourceA, OUTPUT);
-  pinMode(sourceB, OUTPUT);
-  pinMode(10, OUTPUT); // change this to 53 on a mega
-  
-  digitalWrite(10, HIGH); // Add this line
-  
-  clock.begin();
-  // Send sketch compiling time to Arduino
-  clock.setDateTime(__DATE__, __TIME__); 
 
+  clock.begin();   // Initialize DS3231
+  clock.setDateTime(__DATE__, __TIME__);  // Send sketch compiling time to Arduino
+  pinMode(sourceA, OUTPUT);   // Initialise signal pin for relay directing to solar power.
+  pinMode(sourceB, OUTPUT);   // Initialise signal pin for relay directing to mains power.
+
+  pinMode(10, OUTPUT); // Required for SD card shield.
+  digitalWrite(10, HIGH); // 
+  
+  //clock.begin();
+  // Send sketch compiling time to Arduino
+  //clock.setDateTime(__DATE__, __TIME__); 
+ 
+  // initialise and log settings to mains power.
   mains();
   String currentTime = getTime();
   initSD();
   dtostrf((voltage),5,2,buffer2);
   writeData(currentTime,Source,buffer2);
 }
-/*
-float truncate(float val, byte dec) 
-{
-    float x = val * pow(10, dec);
-    float y = round(x);
-    float z = x - y;
-    if ((int)z == 5)
-    {
-        y++;
-    } else {}
-    x = y / pow(10, dec);
-    return x;
-}
-
-*/
 
 void loop() {
+  // get voltage & current date time.
   voltage = measureVoltage();
+  Serial.print(voltage);
   String currentTime = getTime();
 
+  // If true, switch to mains voltage and charge battery.
   if((voltage <= lowerThreashold) && (Source = "solar")){
     Source = "mains";
-    Serial.print(voltage);
-    Serial.print(Source);
     mains();
-    //initSD();
     dtostrf((voltage),5,2,buffer2);
     writeData(currentTime,Source,buffer2);
   }
 
+  // if true battery charged, switch back to solar power.
   else if((voltage >= upperThreashold) && (Source = "mains")){
     Source = "solar";
-    Serial.print(voltage);
-    Serial.print(Source);
     solar();
-    //initSD();
     dtostrf((voltage),5,2,buffer2);
     writeData(currentTime,Source,buffer2);
   };
-
   delay(1000);
-}
-
-  
-/*
-  //Serial.print(voltage * 11.132);
-
-   if (voltage * 11.132<=12.05){
-      Serial.print(voltage * 11.132);
-       //Serial.print("Source = mains");
-       String Source = "mains";
-       mains();
-       initSD();
-       dtostrf((voltage*11.132),5,2,buffer2);
-       writeData(currentTime,Source,buffer2);
-       }
-  if (voltage * 11.132>12.05){
-      Serial.print(voltage * 11.132);
-       //Serial.print("Source = Solar");
-       String Source = "solar";
-       solar();
-       initSD();
-       dtostrf((voltage*11.132),5,2,buffer2);
-       writeData(currentTime,Source,buffer2);
-       }
-
-  delay(1000);
-  }
-*/
-
-/*
-
-
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  voltage=measureVoltage();
-  Serial.print(voltage * 11.132);
-  Serial.println (" V");
-  if (voltage * 11.132<=12.05){
-    Serial.print("Source = mains");
-    mains();
-  ;}
-  if (voltage * 11.132>12.05){
-    Serial.print("Source = Solar");
-    solar();
-  ;}
-}
-
-
-
-*/
+};

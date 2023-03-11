@@ -1,3 +1,4 @@
+//Retrive current  datetime and return as string.
 String getTime() {
   dt = clock.getDateTime();
   String someString="";
