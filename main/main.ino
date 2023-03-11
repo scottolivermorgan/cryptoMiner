@@ -29,7 +29,12 @@ RTCDateTime dt;
 int sourceA = 6;    //Solar
 int sourceB = 5;     //Mains
 float voltage = 0.0;
+String Source = "mains"; 
+float lowerThreashold = 12.5 ;
+float upperThreashold = 13.5 ;
+
 char buffer2[5];
+
 void setup() {
   Serial.begin(9600);
    // Wait for USB Serial
@@ -49,7 +54,13 @@ void setup() {
   
   clock.begin();
   // Send sketch compiling time to Arduino
-  clock.setDateTime(__DATE__, __TIME__);    
+  clock.setDateTime(__DATE__, __TIME__); 
+
+  mains();
+  String currentTime = getTime();
+  initSD();
+  dtostrf((voltage),5,2,buffer2);
+  writeData(currentTime,Source,buffer2);
 }
 /*
 float truncate(float val, byte dec) 
@@ -68,8 +79,34 @@ float truncate(float val, byte dec)
 */
 
 void loop() {
-  String currentTime = getTime();
   voltage = measureVoltage();
+  String currentTime = getTime();
+
+  if((voltage <= lowerThreashold) && (Source = "solar")){
+    Source = "mains";
+    Serial.print(voltage);
+    Serial.print(Source);
+    mains();
+    //initSD();
+    dtostrf((voltage),5,2,buffer2);
+    writeData(currentTime,Source,buffer2);
+  }
+
+  else if((voltage >= upperThreashold) && (Source = "mains")){
+    Source = "solar";
+    Serial.print(voltage);
+    Serial.print(Source);
+    solar();
+    //initSD();
+    dtostrf((voltage),5,2,buffer2);
+    writeData(currentTime,Source,buffer2);
+  };
+
+  delay(1000);
+}
+
+  
+/*
   //Serial.print(voltage * 11.132);
 
    if (voltage * 11.132<=12.05){
@@ -84,7 +121,7 @@ void loop() {
   if (voltage * 11.132>12.05){
       Serial.print(voltage * 11.132);
        //Serial.print("Source = Solar");
-       String Source = "Solar";
+       String Source = "solar";
        solar();
        initSD();
        dtostrf((voltage*11.132),5,2,buffer2);
@@ -93,7 +130,7 @@ void loop() {
 
   delay(1000);
   }
-
+*/
 
 /*
 

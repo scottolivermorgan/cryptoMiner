@@ -24,4 +24,4 @@ float measureVoltage(){
   // divides by 11. 11.132 is the calibrated voltage divide
   // value
 
-  return voltage; }
+  return voltage* 11.132; }
